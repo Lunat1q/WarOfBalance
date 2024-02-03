@@ -10,6 +10,7 @@ var RADIUS_SCALE_MAX = 1.5;
 // The number of circles
 var squareSize = 30;
 var circleSize = 15;
+var initialCirclesOnEachSide = 4;
 var xSquares;
 var ySquares;
 var xSize;
@@ -18,6 +19,7 @@ var ySize;
 var canvas;
 var context;
 var field;
+var frameId = 10;
 
 var mouseX = (window.innerWidth - SCREEN_WIDTH);
 var mouseY = (window.innerHeight - SCREEN_HEIGHT);
@@ -94,14 +96,11 @@ function stopEvent(event) {
 
 function initBullets() {
     bullets = [];
-    addNewBullet(0, SCREEN_WIDTH / 2);
-    addNewBullet(0, SCREEN_WIDTH / 2);
-    addNewBullet(0, SCREEN_WIDTH / 2);
-    addNewBullet(0, SCREEN_WIDTH / 2);
-    addNewBullet(SCREEN_WIDTH / 2, SCREEN_WIDTH);
-    addNewBullet(SCREEN_WIDTH / 2, SCREEN_WIDTH);
-    addNewBullet(SCREEN_WIDTH / 2, SCREEN_WIDTH);
-    addNewBullet(SCREEN_WIDTH / 2, SCREEN_WIDTH);
+    for (let i = 0; i < initialCirclesOnEachSide; i++) {
+        addNewBullet(0, SCREEN_WIDTH / 2);
+        addNewBullet(SCREEN_WIDTH / 2, SCREEN_WIDTH);
+
+    }
 }
 
 function addNewBullet(xMin, xMax) {
@@ -125,7 +124,8 @@ function addNewBullet(xMin, xMax) {
         speed: { dx: dx, dy: dy },
         fillColor: getFillColor(bulletTeam),
         size: circleSize,
-        team: bulletTeam
+        team: bulletTeam,
+        shiftFrame: { x: 0, y: 0 }
     };
     bullets.push(bullet);
 }
@@ -161,6 +161,16 @@ function windowResizeHandler() {
 }
 
 function isCollision(circleX, circleY, circleRadius, squareX, squareY, squareWidth, squareHeight) {
+
+    if (
+        circleX - circleRadius >= squareX &&
+        circleX + circleRadius <= squareX + squareWidth &&
+        circleY - circleRadius >= squareY &&
+        circleY + circleRadius <= squareY + squareHeight
+    ) {
+        return true;
+    }
+
     // Calculate the distance between the center of the circle and the square
     let deltaX = circleX - Math.max(squareX, Math.min(circleX, squareX + squareWidth));
     let deltaY = circleY - Math.max(squareY, Math.min(circleY, squareY + squareHeight));
@@ -177,23 +187,25 @@ function loop() {
     context.fillRect(0, 0, context.canvas.width, context.canvas.height);
     handleFieldFrame();
     handleBulletsFrame();
+    frameId++;
 }
 
+//TODO: No need to look for the entire field array, can check only surrounding squares by calculating nearby square indexes
 function findSquareInRadius(bullet) {
     let ret = { current: null, hit: null, match: 0 };
     for (let x = 0, xLen = field.length; x < xLen; x++) {
         for (let y = 0, yLen = field[x].length; y < yLen; y++) {
             var sq = field[x][y];
 
-            if (isCollision(
+            if (sq.team == bullet.team && ret.hit == null && isCollision(
                 bullet.position.x, bullet.position.y, bullet.size / 2,
                 sq.position.x, sq.position.y, xSize, ySize)) {
-                if (sq.team == bullet.team) {
-                    ret.hit = sq;
-                }
-                else {
-                    ret.current = sq;
-                }
+                ret.hit = sq;
+            }
+            else if (sq.team != bullet.team && ret.current == null && isCollision(
+                bullet.position.x, bullet.position.y, bullet.size / 2,
+                sq.position.x, sq.position.y, xSize, ySize)) {
+                ret.current = sq;
             }
 
             if (ret.current != null && ret.hit != null) {
@@ -215,7 +227,9 @@ function calculateNewSpeed(bullet, square, sqSizeX, sqSizeY) {
 }
 
 function changleTeamOfSquare(squares, bullet) {
-    squares.hit.team = squares.current.team;
+    if (squares.current != null) {
+        squares.hit.team = squares.current.team;
+    }
 }
 
 function handleBulletsFrame() {
@@ -224,7 +238,7 @@ function handleBulletsFrame() {
 
         var squares = findSquareInRadius(b);
 
-        if (squares.current != null && squares.hit != null) {
+        if (squares.hit != null) {
             calculateNewSpeed(b, squares.hit, xSize, ySize);
             changleTeamOfSquare(squares, b);
         }
@@ -232,12 +246,14 @@ function handleBulletsFrame() {
         b.position.x += b.speed.dx;
         b.position.y += b.speed.dy;
 
-        let bRad = b.size / 2;
-        if (b.position.x - bRad < 0 || b.position.x + bRad > SCREEN_WIDTH) {
+        let borderOffset = b.size / 2 + Math.abs(b.speed.dx);
+        if ((b.position.x - borderOffset < 0 || b.position.x + borderOffset > SCREEN_WIDTH) && b.shiftFrame.x + 3 < frameId) {
             b.speed.dx *= -1;
+            b.shiftFrame.x = frameId;
         }
-        if (b.position.y - bRad < 0 || b.position.y + bRad > SCREEN_HEIGHT) {
+        if ((b.position.y - borderOffset < 0 || b.position.y + borderOffset > SCREEN_HEIGHT) && b.shiftFrame.y + 3 < frameId) {
             b.speed.dy *= -1;
+            b.shiftFrame.y = frameId;
         }
 
         context.beginPath();
