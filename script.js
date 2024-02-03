@@ -246,14 +246,19 @@ function handleBulletsFrame() {
         b.position.x += b.speed.dx;
         b.position.y += b.speed.dy;
 
-        let borderOffset = b.size / 2 + Math.abs(b.speed.dx);
-        if ((b.position.x - borderOffset < 0 || b.position.x + borderOffset > SCREEN_WIDTH) && b.shiftFrame.x + 3 < frameId) {
-            b.speed.dx *= -1;
-            b.shiftFrame.x = frameId;
+        let borderOffsetX = b.size / 2 + Math.abs(b.speed.dx);
+        let borderOffsetY = b.size / 2 + Math.abs(b.speed.dy);
+        if (b.position.x - borderOffsetX < 0) { //left
+            b.speed.dx = Math.abs(b.speed.dx);
         }
-        if ((b.position.y - borderOffset < 0 || b.position.y + borderOffset > SCREEN_HEIGHT) && b.shiftFrame.y + 3 < frameId) {
-            b.speed.dy *= -1;
-            b.shiftFrame.y = frameId;
+        else if (b.position.x + borderOffsetX > SCREEN_WIDTH) { //right
+            b.speed.dx = Math.abs(b.speed.dx) * -1;
+        }
+        if (b.position.y - borderOffsetY < 0) {//top
+            b.speed.dy = Math.abs(b.speed.dy);
+        }
+        else if (b.position.y + borderOffsetY > SCREEN_HEIGHT) { //bottom
+            b.speed.dy = Math.abs(b.speed.dy) * -1;
         }
 
         context.beginPath();
