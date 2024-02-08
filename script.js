@@ -263,7 +263,7 @@ function changleTeamOfSquare(squares, bullet) {
     else {
         squares.hit.team = chooseOppositeTeam(bullet.team);
     }
-    quares.hit.teamSwapFrame = frameId;
+    squares.hit.teamSwapFrame = frameId;
 }
 
 function animateBullet(b) {
