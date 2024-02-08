@@ -70,7 +70,8 @@ function createField() {
             var square = {
                 position: { x: xSize * x, y: ySize * y },
                 index: { x: x, y: y },
-                team: getTeam(x, y)
+                team: getTeam(x, y),
+                teamSwapFrame: -1
             };
             row.push(square)
         }
@@ -161,7 +162,7 @@ function keyPressHandler(e) {
     }
 }
 
-function adjustSpeed(multiplier){
+function adjustSpeed(multiplier) {
     for (let i = 0, len = bullets.length; i < len; i++) {
         let point = bullets[i];
         point.speed.dx *= multiplier;
@@ -247,21 +248,25 @@ function calculateNewSpeed(bullet, square, sqSizeX, sqSizeY) {
     bullet.speed.dy = speed * Math.sin(angle);
 }
 
-function chooseOppositeTeam(teamId){
+function chooseOppositeTeam(teamId) {
     return teamId == 1 ? 0 : 1;
 }
 
 function changleTeamOfSquare(squares, bullet) {
+    if (squares.hit.teamSwapFrame == frameId) {
+        return;
+    }
+
     if (squares.current != null) {
         squares.hit.team = squares.current.team;
     }
-    else{
+    else {
         squares.hit.team = chooseOppositeTeam(bullet.team);
     }
+    quares.hit.teamSwapFrame = frameId;
 }
 
-function animateBullet(b)
-{
+function animateBullet(b) {
     let borderOffsetX = b.size / 2 + Math.abs(b.speed.dx);
     let borderOffsetY = b.size / 2 + Math.abs(b.speed.dy);
     if (b.position.x - borderOffsetX < 0) { //left
@@ -278,7 +283,7 @@ function animateBullet(b)
     }
 }
 
-function ensureScreenBorders(b){
+function ensureScreenBorders(b) {
     if (b.position.x < 0) {
         b.position.x = 0;
     }
