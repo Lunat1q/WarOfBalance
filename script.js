@@ -143,8 +143,29 @@ function keyPressHandler(e) {
     if (e.keyCode == 32) {
         addNewBullet();
     }
-    else if (e.keyCode = 13) {
+    else if (e.keyCode == 13) {
         bullets.pop();
+    }
+
+    switch (e.code) {
+        case 'Equal':
+            baseSpeed *= 1.1;
+            adjustSpeed(1.1);
+            break;
+        case 'Minus':
+            baseSpeed *= 1 / 1.1;
+            adjustSpeed(1 / 1.1);
+            break;
+        default:
+            break;
+    }
+}
+
+function adjustSpeed(multiplier){
+    for (let i = 0, len = bullets.length; i < len; i++) {
+        let point = bullets[i];
+        point.speed.dx *= multiplier;
+        point.speed.dy *= multiplier;
     }
 }
 
@@ -226,9 +247,49 @@ function calculateNewSpeed(bullet, square, sqSizeX, sqSizeY) {
     bullet.speed.dy = speed * Math.sin(angle);
 }
 
+function chooseOppositeTeam(teamId){
+    return teamId == 1 ? 0 : 1;
+}
+
 function changleTeamOfSquare(squares, bullet) {
     if (squares.current != null) {
         squares.hit.team = squares.current.team;
+    }
+    else{
+        squares.hit.team = chooseOppositeTeam(bullet.team);
+    }
+}
+
+function animateBullet(b)
+{
+    let borderOffsetX = b.size / 2 + Math.abs(b.speed.dx);
+    let borderOffsetY = b.size / 2 + Math.abs(b.speed.dy);
+    if (b.position.x - borderOffsetX < 0) { //left
+        b.speed.dx = Math.abs(b.speed.dx);
+    }
+    else if (b.position.x + borderOffsetX > SCREEN_WIDTH) { //right
+        b.speed.dx = Math.abs(b.speed.dx) * -1;
+    }
+    if (b.position.y - borderOffsetY < 0) {//top
+        b.speed.dy = Math.abs(b.speed.dy);
+    }
+    else if (b.position.y + borderOffsetY > SCREEN_HEIGHT) { //bottom
+        b.speed.dy = Math.abs(b.speed.dy) * -1;
+    }
+}
+
+function ensureScreenBorders(b){
+    if (b.position.x < 0) {
+        b.position.x = 0;
+    }
+    else if (b.position.x > SCREEN_WIDTH) {
+        b.position.x = SCREEN_WIDTH;
+    }
+    if (b.position.y < 0) {
+        b.position.y = 0;
+    }
+    else if (b.position.y > SCREEN_HEIGHT) {
+        b.position.y = SCREEN_HEIGHT;
     }
 }
 
@@ -246,20 +307,9 @@ function handleBulletsFrame() {
         b.position.x += b.speed.dx;
         b.position.y += b.speed.dy;
 
-        let borderOffsetX = b.size / 2 + Math.abs(b.speed.dx);
-        let borderOffsetY = b.size / 2 + Math.abs(b.speed.dy);
-        if (b.position.x - borderOffsetX < 0) { //left
-            b.speed.dx = Math.abs(b.speed.dx);
-        }
-        else if (b.position.x + borderOffsetX > SCREEN_WIDTH) { //right
-            b.speed.dx = Math.abs(b.speed.dx) * -1;
-        }
-        if (b.position.y - borderOffsetY < 0) {//top
-            b.speed.dy = Math.abs(b.speed.dy);
-        }
-        else if (b.position.y + borderOffsetY > SCREEN_HEIGHT) { //bottom
-            b.speed.dy = Math.abs(b.speed.dy) * -1;
-        }
+        animateBullet(b);
+
+        ensureScreenBorders(b);
 
         context.beginPath();
         context.fillStyle = b.fillColor;
